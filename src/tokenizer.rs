@@ -3,8 +3,10 @@ use tokenizers::{Result, TokenizerBuilder, AddedToken};
 use tokenizers::normalizers::{strip::Strip, unicode::NFC, utils::Sequence};
 use tokenizers::pre_tokenizers::byte_level::ByteLevel;
 
-pub fn tokenize() -> Result<()> {
-    println!("Creating a tokenizer");
+use crate::data;
+
+pub fn tokenize() -> Result<tokenizers::TokenizerImpl<BPE, Sequence, ByteLevel, ByteLevel, ByteLevel>> {
+    println!("Creating the tokenizer");
     let mut trainer = BpeTrainerBuilder::new()
         .vocab_size(48000)
         .min_frequency(0)
@@ -29,12 +31,10 @@ pub fn tokenize() -> Result<()> {
         .with_decoder(Some(ByteLevel::default()))
         .build()?;
     
-    tokenizer.train_from_files(&mut trainer, vec!["data/data1.txt".to_string(), "data/data2.txt".to_string()]).unwrap();
+    let file_paths = data::get_file_paths("data");
+    tokenizer.train_from_files(&mut trainer, file_paths).unwrap();
 
     tokenizer.save("checkpoints/tokenizer.json", false).unwrap();
 
-    let encoding = tokenizer.encode("Rust is amazing!", true).unwrap();
-    println!("Test sentence: {:?}", encoding.get_tokens());
-
-    Ok(())
+    Ok(tokenizer)
 }

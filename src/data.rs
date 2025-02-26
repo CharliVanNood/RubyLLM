@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Read;
 use regex::Regex;
 
-fn get_file_paths(folder: &str) -> Vec<String> {
+pub fn get_file_paths(folder: &str) -> Vec<String> {
     let mut paths = Vec::new();
 
     if let Ok(entries) = fs::read_dir(folder) {
