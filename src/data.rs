@@ -27,7 +27,7 @@ pub fn load_data() -> String {
     let mut loaded_text = String::new();
 
     let file_paths = get_file_paths("data");
-    println!("loading {} files", file_paths.len());
+    println!("Loading {} files", file_paths.len());
 
     for file_path in file_paths {
         let file = fs::File::open(file_path);
@@ -46,7 +46,7 @@ pub fn load_data() -> String {
 
     println!("{} 'what' questions loaded", loaded_text.matches("what").count());
     println!("{} 'why' questions loaded", loaded_text.matches("why").count());
-    println!("{} 'how' questions loaded\n", loaded_text.matches("how").count());
+    println!("{} 'how' questions loaded", loaded_text.matches("how").count());
 
     loaded_text
 }
@@ -54,4 +54,11 @@ pub fn load_data() -> String {
 pub fn reduce_spaces(text: &str) -> String {
     let re = Regex::new(r" {2,}").unwrap();
     re.replace_all(text, " ").to_string()
+}
+
+pub fn split_sentences(text: &str) -> Vec<String> {
+    text.split(|c| c == '.' || c == '?' || c == '!' || c == '\n')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect()
 }

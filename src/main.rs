@@ -5,6 +5,6 @@ fn main() {
 
     let text = data::load_data();
     let text_reduced = data::reduce_spaces(&text);
-    
-    println!("{}", text_reduced);
+    let sentences = data::split_sentences(&text_reduced);
+    println!("The text has been split into {} sentences", sentences.len());
 }
