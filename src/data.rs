@@ -41,7 +41,6 @@ pub fn load_data() -> String {
             Err(e) => eprintln!("Error opening file: {}", e),
         }
     }
-
-    println!("{}", loaded_text);
+    
     loaded_text
 }
