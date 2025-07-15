@@ -1,8 +1,11 @@
 mod data;
 mod tokenizer;
+mod setup;
 
 fn main() {
     println!("\nRUBY AI\n");
+
+    setup::setup();
 
     let text = data::load_data();
     let text_reduced = data::reduce_spaces(&text);
@@ -22,5 +25,5 @@ fn main() {
     };
 
     let encoding = tokenizer.encode("Rust is amazing!", true).unwrap();
-    println!("Test sentence: {:?}", encoding.get_tokens());
+    println!("Test sentence: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
 }
