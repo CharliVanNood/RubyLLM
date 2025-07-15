@@ -19,6 +19,8 @@ import time
 
 Epochs = 5
 
+print("Num GPUs Available:", len(tf.config.list_physical_devices('GPU')))
+
 def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, breakPoints):
     in_text = seed_text
     return_text = out_text
@@ -38,7 +40,7 @@ def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, bre
         yhat = 0
 
         try:
-            encoded = pad_sequences([encodedInput], maxlen=max_length, padding='pre')
+            encoded = pad_sequences([encodedInput], maxlen=max_length, padding='pre', value=3)
             print(encoded)
             prediction = model.predict(encoded)
 
@@ -62,7 +64,6 @@ def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, bre
             out_word = ''
 
             wordConverted = True
-            print(yhat)
             word = tokenizer.decode([yhat])
             print("word created: " + str(word))
         except Exception as e:
@@ -82,14 +83,6 @@ def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, bre
                 in_text += out_word
                 return_text += out_word
                 wordsWritten += 1
-                splitReturnText = return_text.split(" ")
-                if len(splitReturnText) > 5 and splitReturnText[len(splitReturnText) - 2] == word and splitReturnText[len(splitReturnText) - 3] == word and splitReturnText[len(splitReturnText) - 4] == word:
-                    replication = True
-                
-                check_text = tokenizer.decode(outsequence)
-                check_text = check_text.replace(" ", "")
-                if (("lnend" in check_text.split(" ")[-1] or "." in check_text.split(" ")[-1]) and wordsWritten >= max_length / 4 and not breakPoints) or replication:
-                    writing = False
             except Exception as e:
                 print("word doesn't exist")
 
