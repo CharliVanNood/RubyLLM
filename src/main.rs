@@ -49,4 +49,5 @@ fn main() {
     let json = serde_json::to_string(&resulting_array).unwrap();
     let mut file = File::create("tokenized/data.json").unwrap();
     file.write_all(json.as_bytes()).unwrap();
+    println!("Data has been written to tokenized/data.json");
 }
