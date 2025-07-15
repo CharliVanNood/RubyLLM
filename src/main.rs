@@ -19,18 +19,19 @@ fn main() {
         }
     };
 
-    let encoding = tokenizer.encode("Rust is amazing!", true).unwrap();
+    let encoding = tokenizer.encode("Nyo is amazing!", true).unwrap();
     println!("Test sentence: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
 
     let text = data::load_data();
     let text_reduced = data::reduce_spaces(&text);
     let text_sanitized = data::sanitize(&text_reduced);
-    println!("The text has been split into {} words\nTokenizing Dataset", text_sanitized.split(" ").count());
+    println!("The text has been split into {} words\nTokenizing Dataset\n", text_sanitized.split(" ").count());
     let text_tokenized = tokenizer.encode(text_sanitized, true).unwrap().get_ids().to_vec();
 
+    println!("Creating sequences");
     let mut sequences = Vec::new();
     for sequence in text_tokenized.windows(64) {
-        println!("{:?}", sequence);
         sequences.push(sequence);
     }
+    println!("Amount of sequences: {}", sequences.len());
 }
