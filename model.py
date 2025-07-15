@@ -4,6 +4,7 @@ from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential, load_model, Model
 from keras.layers import Dense, LSTM, Embedding, Dropout, Masking, LayerNormalization
 from tensorflow.keras.callbacks import LearningRateScheduler
+from tokenizers import Tokenizer
 
 tf.config.optimizer.set_jit(True)
 
@@ -12,10 +13,98 @@ import numpy as np
 import random
 import os
 import json
+from os import walk
 
 import time
 
 Epochs = 5
+
+def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, breakPoints):
+    in_text = seed_text
+    return_text = out_text
+    writing = True
+    replication = False
+    wordsWritten = 0
+    outsequence = []
+
+    encodedInput = tokenizer.encode(in_text).ids
+
+    word_ = 0
+    while word_ < n_words and writing:
+        word_ += 1
+        wordConverted = False
+        word = ""
+
+        yhat = 0
+
+        try:
+            encoded = pad_sequences([encodedInput], maxlen=max_length, padding='pre')
+            print(encoded)
+            prediction = model.predict(encoded)
+
+            percentage_ = 100
+            percentages_ = []
+
+            while percentage_ > 10:
+                result_ = np.float32(np.max(prediction))
+                percentage_ = round(result_ * 100)
+                yhat = prediction[0].tolist().index(result_)
+                for x in range(percentage_):
+                    percentages_.append(yhat)
+                prediction[0][yhat] = 0
+
+            if len(percentages_) == 0:
+                print("NO VALID WORDS FOUND")
+                percentages_.append(random.randint(0, VocabSize))
+
+            yhat = percentages_[random.randint(0, len(percentages_) - 1)]
+
+            out_word = ''
+
+            wordConverted = True
+            print(yhat)
+            word = tokenizer.decode([yhat])
+            print("word created: " + str(word))
+        except Exception as e:
+            print(e)
+            print("prediction doesn't exist")
+            out_word = "eh"
+            in_text += out_word
+            return_text += out_word
+            if random.randint(0, 5) == 0:
+                writing = False
+
+        if wordConverted:
+            try:
+                outsequence.append(yhat)
+                encodedInput.append(yhat)
+                out_word = word
+                in_text += out_word
+                return_text += out_word
+                wordsWritten += 1
+                splitReturnText = return_text.split(" ")
+                if len(splitReturnText) > 5 and splitReturnText[len(splitReturnText) - 2] == word and splitReturnText[len(splitReturnText) - 3] == word and splitReturnText[len(splitReturnText) - 4] == word:
+                    replication = True
+                
+                check_text = tokenizer.decode(outsequence)
+                check_text = check_text.replace(" ", "")
+                if (("lnend" in check_text.split(" ")[-1] or "." in check_text.split(" ")[-1]) and wordsWritten >= max_length / 4 and not breakPoints) or replication:
+                    writing = False
+            except Exception as e:
+                print("word doesn't exist")
+                outsequence.append(1)
+                encodedInput.append(1)
+                print(np.float32(np.max(prediction)) * 100)
+                if random.randint(0, 5) == 0:
+                    writing = False
+
+        if not writing:
+            word_ = n_words
+
+    return_text = tokenizer.decode(outsequence)
+
+    return return_text
+
 
 def lr_schedule(epoch, lr):
     if epoch < 5:
@@ -132,13 +221,13 @@ def build_transformer_model(vocab_size, maxlen, embed_dim, num_heads, ff_dim, nu
 
 
 class quickSave(keras.callbacks.Callback):
-    def __init__(self, model, tokenizer, wordTokens):
+    def __init__(self, model, tokenizer, sequenceLength):
         self.model = model
         self.tokenizer = tokenizer
-        self.wordTokens = wordTokens
+        self.sequenceLength = sequenceLength
 
     def on_epoch_end(self, epoch, logs={}):
-        print(generate_seq(self.model, self.tokenizer, sequenceLength, "hello how are you doing today?[sep]", 20, "hello how are you doing today?[sep]", False, specialCharacters, self.wordTokens))
+        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 20, "hello how are you doing today?[SEP]", False))
         print('saving model')
         amountOfFiles = len(next(walk("./training"), (None, None, []))[2]) - 3
         self.model.save(f"./training/epoch{str(amountOfFiles + 1)}.h5")
@@ -162,23 +251,29 @@ class quickSave(keras.callbacks.Callback):
         print('Metrics saved.')
 
 def TrainModelNew():
+    print("*** Loading Tokenizer Data ***")
+    tokenizer = Tokenizer.from_file("checkpoints/tokenizer.json")
+    output = tokenizer.encode("Hello, this is a test.[SEP]")
+    print("IDs:", output.ids)
+    print("Tokens:", output.tokens)
+    print("*** Loaded Tokenizer Data ***\n")
+
     print("*** Loading Tokenized Data ***")
     with open('tokenized/data.json', 'r') as file:
         data = json.load(file)
     train_x = np.array(data[0])
     train_y = np.array(data[1])
-    print("*** Loaded Tokenized Data ***")
+    vocab_size = data[2]
+    print("Sequences loaded: " + str(len(train_y)))
+    print("Sequence  length: " + str(len(train_x[0])))
+    print("vocab     length: " + str(vocab_size))
+    print("*** Loaded Tokenized Data ***\n")
     sequenceLength = len(train_x[0])
 
     print("*** compiling model ***")
-    print("Sequences loaded: " + str(len(train_y)))
-    print("Sequence  length: " + str(len(train_x[0])))
-
     model = build_transformer_model(vocab_size, sequenceLength, 128, 2, 128, 3)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
-
-    print("*** compiled model ***")
-    print("")
+    print("*** compiled model ***\n")
 
     epochs_ = input(f"epochs (default: {Epochs}): ")
     if epochs_ == "" or not epochs_.isnumeric():
@@ -198,7 +293,7 @@ def TrainModelNew():
     input("start training: ")
     print("*** Training ***")
 
-    model.fit(train_x, train_y, batch_size=64, epochs=epochs_, validation_split=0.2, callbacks=[quickSave(model, tokenizer, wordTokens), LearningRateScheduler(lr_schedule)])
+    model.fit(train_x, train_y, batch_size=64, epochs=epochs_, validation_split=0.2, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
 
     amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
     model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")

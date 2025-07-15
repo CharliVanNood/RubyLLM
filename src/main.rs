@@ -44,7 +44,7 @@ fn main() {
         results.push(target);
     }
     println!("Amount of sequences: {}\nAmount of results: {}\n\nWriting to file", sequences.len(), results.len());
-    let resulting_array = (sequences, results);
+    let resulting_array = (sequences, results, tokenizer.get_vocab_size(false));
 
     let json = serde_json::to_string(&resulting_array).unwrap();
     let mut file = File::create("tokenized/data.json").unwrap();
