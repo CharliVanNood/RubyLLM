@@ -4,7 +4,6 @@ from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential, load_model, Model
 from keras.layers import Dense, LSTM, Embedding, Dropout, Masking, LayerNormalization
 from tensorflow.keras.callbacks import LearningRateScheduler
-from tokenizers import Tokenizer
 
 tf.config.optimizer.set_jit(True)
 
@@ -163,18 +162,17 @@ class quickSave(keras.callbacks.Callback):
         print('Metrics saved.')
 
 def TrainModelNew():
+    print("*** Loading Tokenized Data ***")
+    with open('tokenized/data.json', 'r') as file:
+        data = json.load(file)
+    train_x = np.array(data[0])
+    train_y = np.array(data[1])
+    print("*** Loaded Tokenized Data ***")
+    sequenceLength = len(train_x[0])
+
     print("*** compiling model ***")
-    sequences = np.array(sequences_)
-    print(sequences)
-    X, y = sequences[:,:-2], sequences[:,-2]
-
-    print(X)
-    print(y)
-
-    print("amount of space endings: " + str(y.tolist().count(129)))
-
-    print("Sequences loaded: " + str(len(y)))
-    print("Parameters: " + str(len(y)))
+    print("Sequences loaded: " + str(len(train_y)))
+    print("Sequence  length: " + str(len(train_x[0])))
 
     model = build_transformer_model(vocab_size, sequenceLength, 128, 2, 128, 3)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
@@ -200,7 +198,7 @@ def TrainModelNew():
     input("start training: ")
     print("*** Training ***")
 
-    model.fit(X, y, batch_size=64, epochs=epochs_, validation_split=0.2, callbacks=[quickSave(model, tokenizer, wordTokens), LearningRateScheduler(lr_schedule)])
+    model.fit(train_x, train_y, batch_size=64, epochs=epochs_, validation_split=0.2, callbacks=[quickSave(model, tokenizer, wordTokens), LearningRateScheduler(lr_schedule)])
 
     amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
     model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
