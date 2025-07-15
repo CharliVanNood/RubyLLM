@@ -92,11 +92,6 @@ def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, bre
                     writing = False
             except Exception as e:
                 print("word doesn't exist")
-                outsequence.append(1)
-                encodedInput.append(1)
-                print(np.float32(np.max(prediction)) * 100)
-                if random.randint(0, 5) == 0:
-                    writing = False
 
         if not writing:
             word_ = n_words
@@ -227,11 +222,11 @@ class quickSave(keras.callbacks.Callback):
         self.sequenceLength = sequenceLength
 
     def on_epoch_end(self, epoch, logs={}):
-        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 20, "hello how are you doing today?[SEP]", False))
+        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64, "hello how are you doing today?[SEP]", False))
         print('saving model')
-        amountOfFiles = len(next(walk("./training"), (None, None, []))[2]) - 3
-        self.model.save(f"./training/epoch{str(amountOfFiles + 1)}.h5")
-        self.tokenizer.save(f"./training/epoch{str(amountOfFiles + 1)}.json")
+        amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
+        self.model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
+        self.tokenizer.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.json")
         print('saved model')
 
         self.history_file = "training_history.json"
