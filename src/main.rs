@@ -2,6 +2,8 @@ mod data;
 mod tokenizer;
 mod setup;
 
+pub const SEQUENCE_LENGTH: usize = 64;
+
 fn main() {
     println!("\nRUBY AI\n");
 
@@ -30,7 +32,7 @@ fn main() {
 
     println!("Creating sequences");
     let mut sequences = Vec::new();
-    for sequence in text_tokenized.windows(64) {
+    for sequence in text_tokenized.windows(SEQUENCE_LENGTH + 1) {
         sequences.push(sequence);
     }
     println!("Amount of sequences: {}", sequences.len());
