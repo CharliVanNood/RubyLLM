@@ -56,9 +56,7 @@ pub fn reduce_spaces(text: &str) -> String {
     re.replace_all(text, " ").to_string()
 }
 
-pub fn split_sentences(text: &str) -> Vec<String> {
-    text.split(|c| c == '.' || c == '?' || c == '!' || c == '\n')
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .collect()
+pub fn sanitize(text: &str) -> String {
+    let re = Regex::new(r"\n").unwrap();
+    re.replace_all(text, "[SEP]").to_string()
 }

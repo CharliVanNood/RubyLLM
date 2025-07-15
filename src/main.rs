@@ -7,11 +7,6 @@ fn main() {
 
     setup::setup();
 
-    let text = data::load_data();
-    let text_reduced = data::reduce_spaces(&text);
-    let sentences = data::split_sentences(&text_reduced);
-    println!("The text has been split into {} sentences\n", sentences.len());
-
     let tokenizer_result = tokenizer::tokenize();
     let tokenizer = match tokenizer_result {
         Ok(tokenizer_out) => {
@@ -26,4 +21,16 @@ fn main() {
 
     let encoding = tokenizer.encode("Rust is amazing!", true).unwrap();
     println!("Test sentence: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
+
+    let text = data::load_data();
+    let text_reduced = data::reduce_spaces(&text);
+    let text_sanitized = data::sanitize(&text_reduced);
+    println!("The text has been split into {} words\nTokenizing Dataset", text_sanitized.split(" ").count());
+    let text_tokenized = tokenizer.encode(text_sanitized, true).unwrap().get_ids().to_vec();
+
+    let mut sequences = Vec::new();
+    for sequence in text_tokenized.windows(64) {
+        println!("{:?}", sequence);
+        sequences.push(sequence);
+    }
 }
