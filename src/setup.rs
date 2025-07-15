@@ -13,4 +13,9 @@ pub fn setup() {
     if !Path::new("checkpoints").exists() {
         fs::create_dir_all("checkpoints").expect("Failed to create checkpoints directory");
     }
+
+    // check if tokenized exists
+    if !Path::new("tokenized").exists() {
+        fs::create_dir_all("tokenized").expect("Failed to create tokenized directory");
+    }
 }

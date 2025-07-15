@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::Write;
+
 mod data;
 mod tokenizer;
 mod setup;
@@ -32,8 +35,18 @@ fn main() {
 
     println!("Creating sequences");
     let mut sequences = Vec::new();
+    let mut results = Vec::new();
     for sequence in text_tokenized.windows(SEQUENCE_LENGTH + 1) {
-        sequences.push(sequence);
+        let input = sequence[..SEQUENCE_LENGTH].to_vec();
+        let target = sequence[SEQUENCE_LENGTH];
+
+        sequences.push(input);
+        results.push(target);
     }
-    println!("Amount of sequences: {}", sequences.len());
+    println!("Amount of sequences: {}\nAmount of results: {}\n\nWriting to file", sequences.len(), results.len());
+    let resulting_array = (sequences, results);
+
+    let json = serde_json::to_string(&resulting_array).unwrap();
+    let mut file = File::create("tokenized/data.json").unwrap();
+    file.write_all(json.as_bytes()).unwrap();
 }
