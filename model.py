@@ -281,7 +281,7 @@ def TrainModelNew():
     input("start training: ")
     print("*** Training ***")
 
-    model.fit(train_x, train_y, batch_size=64, epochs=epochs_, validation_split=0.2, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
+    model.fit(train_x, train_y, batch_size=64, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
 
     amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
     model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
