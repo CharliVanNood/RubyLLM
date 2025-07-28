@@ -73,7 +73,7 @@ fn main() {
             previous_token = token;
         }
     }
-    for sequence in 0..7 {
+    for sequence in 0..5 {
         println!("{:?}", sequences[sequence + base_sequences_len]);
     }
     println!("Amount of sequences: {}\nAmount of results: {}\nAmount of seperations: {}\n\nWriting to file", sequences.len(), results.len(), seperators);
