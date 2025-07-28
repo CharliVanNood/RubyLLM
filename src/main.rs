@@ -65,7 +65,7 @@ fn main() {
             results.push(token);
         }
 
-        if previous_token == seperation_token {
+        if previous_token == seperation_token && temp_sequence[0] != 0 {
             temp_sequence = [0; SEQUENCE_LENGTH];
             seperators += 1;
             previous_token = 0;
