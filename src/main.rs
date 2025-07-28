@@ -47,6 +47,7 @@ fn main() {
         sequences.push(input);
         results.push(target);
     }
+    let base_sequences_len = sequences.len();
     println!("Amount of sequences: {}\nAmount of results: {}\n", sequences.len(), results.len());
 
     println!("Creating partial sequences");
@@ -54,18 +55,26 @@ fn main() {
     let mut previous_token = 0;
     let mut seperators = 0;
     for token in text_tokenized {
-        temp_sequence[SEQUENCE_LENGTH - 2] = temp_sequence[SEQUENCE_LENGTH - 1];
+        for i in 0..SEQUENCE_LENGTH-1 {
+            temp_sequence[i] = temp_sequence[i + 1];
+        }
         temp_sequence[SEQUENCE_LENGTH - 1] = previous_token;
 
         if temp_sequence != [0; SEQUENCE_LENGTH] {
             sequences.push(temp_sequence.to_vec());
             results.push(token);
         }
-        previous_token = token;
+
         if previous_token == seperation_token {
             temp_sequence = [0; SEQUENCE_LENGTH];
             seperators += 1;
+            previous_token = 0;
+        } else {
+            previous_token = token;
         }
+    }
+    for sequence in 0..10 {
+        println!("{:?}", sequences[sequence + base_sequences_len]);
     }
     println!("Amount of sequences: {}\nAmount of results: {}\nAmount of seperations: {}\n\nWriting to file", sequences.len(), results.len(), seperators);
     let resulting_array = (sequences, results, tokenizer.get_vocab_size(false));
