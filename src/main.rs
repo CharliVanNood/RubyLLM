@@ -13,9 +13,10 @@ fn main() {
     println!("\nNyoLLM Data Transformer\n");
 
     dotenv().ok();
-    setup::setup(&env::var("TRAIN_DATA").expect("TRAIN_DATA not set in .env"));
+    let training_data_directory = env::var("TRAIN_DATA").expect("TRAIN_DATA not set in .env");
+    setup::setup(&training_data_directory);
 
-    let tokenizer_result = tokenizer::tokenize();
+    let tokenizer_result = tokenizer::tokenize(&training_data_directory);
     let tokenizer = match tokenizer_result {
         Ok(tokenizer_out) => {
             println!("Created the tokenizer with vocab size {}\n", tokenizer_out.get_vocab_size(false));
@@ -27,14 +28,14 @@ fn main() {
         }
     };
 
-    let encoding = tokenizer.encode("Nyo is amazing!", true).unwrap();
+    let encoding = tokenizer.encode("Nyo is amazing![CLS]", true).unwrap();
     println!("Test sentence: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
 
     // Get Enter Token
     let encoding = tokenizer.encode("[SEP]", true).unwrap();
     let seperation_token = encoding.get_ids()[0];
 
-    let text = data::load_data();
+    let text = data::load_data(&training_data_directory);
     let text_reduced = data::reduce_spaces(&text);
     let text_sanitized = data::sanitize(&text_reduced);
     println!("The text has been split into {} words\nTokenizing Dataset\n", text_sanitized.split(" ").count());

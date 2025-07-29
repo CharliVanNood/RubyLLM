@@ -23,10 +23,10 @@ pub fn get_file_paths(folder: &str) -> Vec<String> {
     paths
 }
 
-pub fn load_data() -> String {
+pub fn load_data(data_path: &str) -> String {
     let mut loaded_text = String::new();
 
-    let file_paths = get_file_paths("data");
+    let file_paths = get_file_paths(data_path);
     println!("Loading {} files", file_paths.len());
 
     for file_path in file_paths {
