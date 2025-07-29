@@ -21,9 +21,9 @@ Epochs = 5
 
 print("Num GPUs Available:", len(tf.config.list_physical_devices('GPU')))
 
-def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, breakPoints):
-    in_text = seed_text
-    return_text = out_text
+def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
+    in_text = query
+    return_text = query
     writing = True
     replication = False
     wordsWritten = 0
@@ -32,7 +32,7 @@ def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, bre
     encodedInput = tokenizer.encode(in_text).ids
 
     word_ = 0
-    while word_ < n_words and writing:
+    while word_ < numberOfWords and writing:
         word_ += 1
         wordConverted = False
         word = ""
@@ -40,7 +40,7 @@ def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, bre
         yhat = 0
 
         try:
-            encoded = pad_sequences([encodedInput], maxlen=max_length, padding='pre', value=3)
+            encoded = pad_sequences([encodedInput], maxlen=sequenceLength, padding='pre', value=0)
             print(encoded)
             prediction = model.predict(encoded)
 
@@ -87,7 +87,7 @@ def generate_seq(model, tokenizer, max_length, seed_text, n_words, out_text, bre
                 print("word doesn't exist")
 
         if not writing:
-            word_ = n_words
+            word_ = numberOfWords
 
     return_text = tokenizer.decode(outsequence)
 
@@ -215,7 +215,7 @@ class quickSave(keras.callbacks.Callback):
         self.sequenceLength = sequenceLength
 
     def on_epoch_end(self, epoch, logs={}):
-        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64, "hello how are you doing today?[SEP]", False))
+        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
         print('saving model')
         amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
         self.model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
@@ -238,13 +238,17 @@ class quickSave(keras.callbacks.Callback):
             json.dump(history_data, f, indent=4)
         print('Metrics saved.')
 
-def TrainModelNew():
+def LoadTokenizer():
     print("*** Loading Tokenizer Data ***")
     tokenizer = Tokenizer.from_file("checkpoints/tokenizer.json")
     output = tokenizer.encode("Hello, this is a test.[SEP]")
     print("IDs:", output.ids)
     print("Tokens:", output.tokens)
     print("*** Loaded Tokenizer Data ***\n")
+    return tokenizer
+
+def TrainModelNew():
+    tokenizer = LoadTokenizer()
 
     print("*** Loading Tokenized Data ***")
     with open('tokenized/data.json', 'r') as file:
@@ -288,3 +292,21 @@ def TrainModelNew():
 
     print("*** Training done ***")
     print("")
+
+def GetModel():
+    tokenizer = LoadTokenizer()
+    
+    print("*** loading model ***")
+    amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
+    with tf.keras.utils.custom_object_scope({'TransformerBlock': TransformerBlock, 'TokenAndPositionEmbedding': TokenAndPositionEmbedding}):
+        model = load_model(f"./trainingOutput/epoch{str(amountOfFiles - 1)}.h5")
+    print(f"*** loaded model ({str(amountOfFiles - 1)}) ***")
+    print("")
+
+    print("*** Model Info ***")
+    print(model.summary())
+    return [model, tokenizer]
+
+def GetResponse(model, tokenizer, query, length):
+    print(generate_seq(model, tokenizer, 64, query, length))
+    
