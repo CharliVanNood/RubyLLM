@@ -32,8 +32,9 @@ fn main() {
     println!("Test sentence: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
 
     // Get Enter Token
-    let encoding = tokenizer.encode("[SEP]", true).unwrap();
+    let encoding = tokenizer.encode("[SEP][CLS]", true).unwrap();
     let seperation_token = encoding.get_ids()[0];
+    let classification_token = encoding.get_ids()[1];
 
     let text = data::load_data(&training_data_directory);
     let text_reduced = data::reduce_spaces(&text);
@@ -69,7 +70,7 @@ fn main() {
             results.push(token);
         }
 
-        if previous_token == seperation_token && temp_sequence[0] != 0 {
+        if (previous_token == seperation_token && temp_sequence[0] != 0) || previous_token == classification_token {
             temp_sequence = [0; SEQUENCE_LENGTH];
             seperators += 1;
             previous_token = 0;
