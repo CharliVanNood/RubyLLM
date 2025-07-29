@@ -17,7 +17,10 @@ pub fn tokenize(data_path: &str) -> Result<tokenizers::TokenizerImpl<BPE, Sequen
                 AddedToken::from(String::from("[PAD]"), true),
                 AddedToken::from(String::from("[CLS]"), true),
                 AddedToken::from(String::from("[SEP]"), true),
-                AddedToken::from(String::from("[MASK]"), true)
+                AddedToken::from(String::from("[MASK]"), true),
+                AddedToken::from(String::from("[IGN]"), true),
+                AddedToken::from(String::from("[STA]"), true),
+                AddedToken::from(String::from("[END]"), true)
             ]).build();
 
     let mut tokenizer = TokenizerBuilder::new()

@@ -83,6 +83,8 @@ def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
                 in_text += out_word
                 return_text += out_word
                 wordsWritten += 1
+                if yhat == 7:
+                    writing = False
             except Exception as e:
                 print("word doesn't exist")
 
@@ -285,7 +287,7 @@ def TrainModelNew():
     input("start training: ")
     print("*** Training ***")
 
-    model.fit(train_x, train_y, batch_size=512, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
+    model.fit(train_x, train_y, batch_size=8, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
 
     amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
     model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")

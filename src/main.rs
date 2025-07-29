@@ -36,9 +36,12 @@ fn main() {
     println!("Test sentence: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
 
     // Get Enter Token
-    let encoding = tokenizer.encode("[SEP][CLS]", true).unwrap();
+    let encoding = tokenizer.encode("[SEP][CLS][IGN][STA]", true).unwrap();
+    println!("Special Tokens: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
     let seperation_token = encoding.get_ids()[0];
     let classification_token = encoding.get_ids()[1];
+    let ignore_token = encoding.get_ids()[2];
+    let start_token = encoding.get_ids()[3];
 
     let text = data::load_data(&training_data_directory);
     let text_reduced = data::reduce_spaces(&text);
@@ -49,7 +52,7 @@ fn main() {
     println!("Creating sequences");
     let mut sequences = Vec::new();
     let mut results = Vec::new();
-    if !TRAIN_FULL {
+    if TRAIN_FULL {
         for sequence in text_tokenized.windows(SEQUENCE_LENGTH + 1) {
             let input = sequence[..SEQUENCE_LENGTH].to_vec();
             let target = sequence[SEQUENCE_LENGTH];
@@ -65,16 +68,21 @@ fn main() {
     let mut temp_sequence = [0; SEQUENCE_LENGTH];
     let mut previous_token = 0;
     let mut seperators = 0;
+    let mut ignore = false;
     for token in text_tokenized {
         for i in 0..SEQUENCE_LENGTH-1 {
             temp_sequence[i] = temp_sequence[i + 1];
         }
         temp_sequence[SEQUENCE_LENGTH - 1] = previous_token;
 
-        if temp_sequence != [0; SEQUENCE_LENGTH] {
+        if temp_sequence != [0; SEQUENCE_LENGTH] && !ignore {
             sequences.push(temp_sequence.to_vec());
             results.push(token);
         }
+
+        if token == ignore_token { ignore = true; }
+        if token == start_token { ignore = false; }
+        if token == seperation_token { ignore = false; }
 
         if (previous_token == seperation_token && temp_sequence[0] != 0) || previous_token == classification_token {
             temp_sequence = [0; SEQUENCE_LENGTH];
