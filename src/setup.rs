@@ -2,9 +2,9 @@ use std::fs;
 use std::path::Path;
 use std::process;
 
-pub fn setup() {
+pub fn setup(data_path: &str) {
     // check if data exists, throw otherwise
-    if !Path::new("data").exists() {
+    if !Path::new(data_path).exists() {
         eprintln!("Error: 'data' directory does not exist.");
         process::exit(1);
     }

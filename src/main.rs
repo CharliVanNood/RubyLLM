@@ -1,5 +1,7 @@
 use std::fs::File;
 use std::io::Write;
+use std::env;
+use dotenv::dotenv;
 
 mod data;
 mod tokenizer;
@@ -10,7 +12,8 @@ pub const SEQUENCE_LENGTH: usize = 64;
 fn main() {
     println!("\nNyoLLM Data Transformer\n");
 
-    setup::setup();
+    dotenv().ok();
+    setup::setup(&env::var("TRAIN_DATA").expect("TRAIN_DATA not set in .env"));
 
     let tokenizer_result = tokenizer::tokenize();
     let tokenizer = match tokenizer_result {
