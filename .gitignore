@@ -24,3 +24,4 @@ training_history.json
 trainingOutput/
 training/
 data/
+dataEmotions/
