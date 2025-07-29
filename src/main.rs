@@ -9,6 +9,10 @@ mod setup;
 
 pub const SEQUENCE_LENGTH: usize = 64;
 
+pub const TRAIN_FULL: bool = true;
+// set this to false if you only want short responses
+// it will not merge sentences for continuation and only make it train on the individual sentences
+
 fn main() {
     println!("\nNyoLLM Data Transformer\n");
 
@@ -45,12 +49,14 @@ fn main() {
     println!("Creating sequences");
     let mut sequences = Vec::new();
     let mut results = Vec::new();
-    for sequence in text_tokenized.windows(SEQUENCE_LENGTH + 1) {
-        let input = sequence[..SEQUENCE_LENGTH].to_vec();
-        let target = sequence[SEQUENCE_LENGTH];
+    if !TRAIN_FULL {
+        for sequence in text_tokenized.windows(SEQUENCE_LENGTH + 1) {
+            let input = sequence[..SEQUENCE_LENGTH].to_vec();
+            let target = sequence[SEQUENCE_LENGTH];
 
-        sequences.push(input);
-        results.push(target);
+            sequences.push(input);
+            results.push(target);
+        }
     }
     let base_sequences_len = sequences.len();
     println!("Amount of sequences: {}\nAmount of results: {}\n", sequences.len(), results.len());
