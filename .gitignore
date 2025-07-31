@@ -25,3 +25,5 @@ trainingOutput/
 training/
 data/
 dataEmotions/
+finetuned/
+finetuning_data/

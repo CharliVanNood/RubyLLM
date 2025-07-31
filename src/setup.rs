@@ -9,6 +9,18 @@ pub fn setup(data_path: &str) {
         process::exit(1);
     }
 
+    if !Path::new("finetuning_data").exists() {
+        fs::create_dir_all("finetuning_data").expect("Failed to create finetuning_data directory");
+    }
+
+    if !Path::new("tokenized_finetuning_data").exists() {
+        fs::create_dir_all("tokenized_finetuning_data").expect("Failed to create tokenized_finetuning_data directory");
+    }
+
+    if !Path::new("finetuned").exists() {
+        fs::create_dir_all("finetuned").expect("Failed to create finetuned directory");
+    }
+
     // check if checkpoints exists
     if !Path::new("checkpoints").exists() {
         fs::create_dir_all("checkpoints").expect("Failed to create checkpoints directory");

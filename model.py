@@ -240,6 +240,31 @@ class quickSave(keras.callbacks.Callback):
             json.dump(history_data, f, indent=4)
         print('Metrics saved.')
 
+class quickSaveTune(keras.callbacks.Callback):
+    def __init__(self, model, tokenizer, sequenceLength):
+        self.model = model
+        self.tokenizer = tokenizer
+        self.sequenceLength = sequenceLength
+
+    def on_epoch_end(self, epoch, logs={}):
+        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
+
+        self.history_file = "training_history.json"
+
+        metrics = {key: float(value) for key, value in logs.items()}
+        metrics["epoch"] = epoch + 1
+        
+        if os.path.exists(self.history_file):
+            with open(self.history_file, "r") as f:
+                history_data = json.load(f)
+            history_data.append(metrics)
+        else:
+            history_data = [metrics]
+        
+        with open(self.history_file, "w") as f:
+            json.dump(history_data, f, indent=4)
+        print('Metrics saved.')
+
 def LoadTokenizer():
     print("*** Loading Tokenizer Data ***")
     tokenizer = Tokenizer.from_file("checkpoints/tokenizer.json")
@@ -287,10 +312,54 @@ def TrainModelNew():
     input("start training: ")
     print("*** Training ***")
 
-    model.fit(train_x, train_y, batch_size=8, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
+    model.fit(train_x, train_y, batch_size=256, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
 
     amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
     model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
+
+    print("*** Training done ***")
+    print("")
+
+def TuneModelNew():
+    tokenizer = LoadTokenizer()
+
+    print("*** Loading Tokenized Data ***")
+    with open('tokenized_finetuning_data/data.json', 'r') as file:
+        data = json.load(file)
+    train_x = np.array(data[0])
+    train_y = np.array(data[1])
+    print("Sequences loaded: " + str(len(train_y)))
+    print("Sequence  length: " + str(len(train_x[0])))
+    print("*** Loaded Tokenized Data ***\n")
+    sequenceLength = len(train_x[0])
+
+    print("*** compiling model ***")
+    modelAndTokenizer = GetModel()
+    model = modelAndTokenizer[0]
+    print("*** compiled model ***\n")
+
+    epochs_ = input(f"epochs (default: {Epochs}): ")
+    if epochs_ == "" or not epochs_.isnumeric():
+        epochs_ = Epochs
+    else:
+        epochs_ = int(epochs_)
+
+    print("*** Model Info ***")
+    print(model.summary())
+
+    if os.path.exists("training_history.json"):
+        os.remove("training_history.json")
+        print("training_history.json has been deleted.")
+    else:
+        print("training_history.json does not exist.")
+
+    input("start training: ")
+    print("*** Training ***")
+
+    model.fit(train_x, train_y, batch_size=128, epochs=epochs_, validation_split=0.05, callbacks=[quickSaveTune(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
+
+    amountOfFiles = len(next(walk("./finetuned"), (None, None, []))[2]) - 3
+    model.save(f"./finetuned/model{str(amountOfFiles + 1)}.h5")
 
     print("*** Training done ***")
     print("")
@@ -303,6 +372,20 @@ def GetModel():
     with tf.keras.utils.custom_object_scope({'TransformerBlock': TransformerBlock, 'TokenAndPositionEmbedding': TokenAndPositionEmbedding}):
         model = load_model(f"./trainingOutput/epoch{str(amountOfFiles - 1)}.h5")
     print(f"*** loaded model ({str(amountOfFiles - 1)}) ***")
+    print("")
+
+    print("*** Model Info ***")
+    print(model.summary())
+    return [model, tokenizer]
+
+def GetModelTuned():
+    tokenizer = LoadTokenizer()
+    
+    print("*** loading model ***")
+    amountOfFiles = len(next(walk("./finetuned"), (None, None, []))[2]) - 3
+    with tf.keras.utils.custom_object_scope({'TransformerBlock': TransformerBlock, 'TokenAndPositionEmbedding': TokenAndPositionEmbedding}):
+        model = load_model(f"./finetuned/model{str(amountOfFiles)}.h5")
+    print(f"*** loaded model ({str(amountOfFiles)}) ***")
     print("")
 
     print("*** Model Info ***")

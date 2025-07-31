@@ -16,12 +16,24 @@ pub const TRAIN_FULL: bool = true;
 fn main() {
     println!("\nNyoLLM Data Transformer\n");
 
+    let mut train = true;
+    for arg in std::env::args() {
+        if arg == "tune" {
+            train = false;
+        } else if arg == "train" {
+            train = true;
+        }
+    }
+
     dotenv().ok();
-    let training_data_directory = env::var("TRAIN_DATA").expect("TRAIN_DATA not set in .env");
+    let mut training_data_directory = env::var("TRAIN_DATA").expect("TRAIN_DATA not set in .env");
     setup::setup(&training_data_directory);
 
-    let tokenizer_result = tokenizer::tokenize(&training_data_directory);
-    let tokenizer = match tokenizer_result {
+    if train {
+        _ = tokenizer::tokenize(&training_data_directory);
+    }
+
+    let tokenizer = match tokenizers::Tokenizer::from_file("checkpoints/tokenizer.json") {
         Ok(tokenizer_out) => {
             println!("Created the tokenizer with vocab size {}\n", tokenizer_out.get_vocab_size(false));
             tokenizer_out
@@ -31,6 +43,10 @@ fn main() {
             return;
         }
     };
+
+    if !train {
+        training_data_directory = "finetuning_data".to_string();
+    }
 
     let encoding = tokenizer.encode("Nyo is amazing![CLS]", true).unwrap();
     println!("Test sentence: {:?} Result: {:?}", encoding.get_tokens(), encoding.get_ids());
@@ -98,8 +114,15 @@ fn main() {
     println!("Amount of sequences: {}\nAmount of results: {}\nAmount of seperations: {}\n\nWriting to file", sequences.len(), results.len(), seperators);
     let resulting_array = (sequences, results, tokenizer.get_vocab_size(false));
 
-    let json = serde_json::to_string(&resulting_array).unwrap();
-    let mut file = File::create("tokenized/data.json").unwrap();
-    file.write_all(json.as_bytes()).unwrap();
-    println!("Data has been written to tokenized/data.json\n\nStarting NyoLLM\n");
+    if train {
+        let json = serde_json::to_string(&resulting_array).unwrap();
+        let mut file = File::create("tokenized/data.json").unwrap();
+        file.write_all(json.as_bytes()).unwrap();
+        println!("Data has been written to tokenized/data.json\n\nStarting NyoLLM\n");
+    } else {
+        let json = serde_json::to_string(&resulting_array).unwrap();
+        let mut file = File::create("tokenized_finetuning_data/data.json").unwrap();
+        file.write_all(json.as_bytes()).unwrap();
+        println!("Data has been written to tokenized_finetuning_data/data.json\n\nStarting NyoLLM\n");
+    }
 }
