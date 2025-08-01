@@ -204,7 +204,8 @@ def build_transformer_model(vocab_size, maxlen, embed_dim, num_heads, ff_dim, nu
     for _ in range(num_layers):
         x = TransformerBlock(embed_dim, num_heads, ff_dim, 0.1)(x)
     x = Dropout(0.1)(x)
-    x = keras.layers.GlobalAveragePooling1D()(x)
+    #x = keras.layers.GlobalAveragePooling1D()(x)
+    x = x[:, -1, :]
     outputs = Dense(vocab_size, activation="softmax")(x)
     model = Model(inputs=inputs, outputs=outputs)
     return model
@@ -290,7 +291,11 @@ def TrainModelNew():
     sequenceLength = len(train_x[0])
 
     print("*** compiling model ***")
-    model = build_transformer_model(vocab_size, sequenceLength, 128, 2, 128, 3)
+    embed_dim = 192
+    num_heads = embed_dim // 64
+    ff_dim = embed_dim * 4
+    num_layers = 6
+    model = build_transformer_model(vocab_size, sequenceLength, embed_dim, num_heads, ff_dim, num_layers)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     print("*** compiled model ***\n")
 
@@ -312,7 +317,7 @@ def TrainModelNew():
     input("start training: ")
     print("*** Training ***")
 
-    model.fit(train_x, train_y, batch_size=256, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
+    model.fit(train_x, train_y, batch_size=512, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
 
     amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
     model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
