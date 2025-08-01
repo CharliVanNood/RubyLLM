@@ -294,7 +294,7 @@ def TrainModelNew():
     embed_dim = 192
     num_heads = embed_dim // 64
     ff_dim = embed_dim * 4
-    num_layers = 6
+    num_layers = 4
     model = build_transformer_model(vocab_size, sequenceLength, embed_dim, num_heads, ff_dim, num_layers)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     print("*** compiled model ***\n")
