@@ -112,14 +112,14 @@ class MultiHeadSelfAttention(keras.layers.Layer):
         self.key_dense = Dense(embed_dim)
         self.value_dense = Dense(embed_dim)
         self.combine_heads = Dense(embed_dim)
-    
-    def attention(self, query, key, value):
+
+    def attention(self, query, key, value, mask=None):
         score = tf.matmul(query, key, transpose_b=True)
         dim_key = tf.cast(tf.shape(key)[-1], tf.float32)
         scaled_score = score / tf.math.sqrt(dim_key)
 
-        #mask = tf.linalg.band_part(tf.ones((tf.shape(score)[1], tf.shape(score)[2])), -1, 0)
-        #scaled_score += (mask * -1e9)
+        if mask is not None:
+            scaled_score += (mask * -1e9)
 
         weights = tf.nn.softmax(scaled_score, axis=-1)
         output = tf.matmul(weights, value)
@@ -137,7 +137,12 @@ class MultiHeadSelfAttention(keras.layers.Layer):
         query = self.separate_heads(query, batch_size)
         key = self.separate_heads(key, batch_size)
         value = self.separate_heads(value, batch_size)
-        attention, weights = self.attention(query, key, value)
+
+        mask = tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
+        mask = 1.0 - mask
+        mask = tf.reshape(mask, (1, 1, seq_len, seq_len))
+
+        attention, weights = self.attention(query, key, value, mask)
         attention = tf.transpose(attention, perm=[0, 2, 1, 3])
         concat_attention = tf.reshape(attention, (batch_size, -1, self.embed_dim))
         output = self.combine_heads(concat_attention)
@@ -291,9 +296,9 @@ def TrainModelNew():
     sequenceLength = len(train_x[0])
 
     print("*** compiling model ***")
-    embed_dim = 192
+    embed_dim = 128
     num_heads = embed_dim // 64
-    ff_dim = embed_dim * 4
+    ff_dim = embed_dim * 2
     num_layers = 4
     model = build_transformer_model(vocab_size, sequenceLength, embed_dim, num_heads, ff_dim, num_layers)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
