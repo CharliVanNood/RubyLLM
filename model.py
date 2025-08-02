@@ -2,11 +2,11 @@ import tensorflow as tf
 from keras.utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential, load_model, Model
-from keras.layers import Dense, LSTM, Embedding, Dropout, Masking, LayerNormalization
+from keras.layers import Dense, LSTM, Embedding, Dropout, Masking, LayerNormalization, Lambda
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tokenizers import Tokenizer
 
-tf.config.optimizer.set_jit(True)
+tf.config.run_functions_eagerly(True)
 
 import keras
 import numpy as np
@@ -20,6 +20,7 @@ import time
 Epochs = 5
 
 print("Num GPUs Available:", len(tf.config.list_physical_devices('GPU')))
+print(tf.config.list_physical_devices('GPU'))
 
 def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
     in_text = query
@@ -83,7 +84,7 @@ def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
                 in_text += out_word
                 return_text += out_word
                 wordsWritten += 1
-                if yhat == 7:
+                if yhat == 7 and random.randint(0, 2) == 0:
                     writing = False
             except Exception as e:
                 print("word doesn't exist")
@@ -98,9 +99,9 @@ def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
 
 def lr_schedule(epoch, lr):
     if epoch < 5:
-        return lr
+        return float(lr)
     else:
-        return lr * tf.math.exp(-0.1)
+        return float(lr * tf.math.exp(-0.1))
 
 class MultiHeadSelfAttention(keras.layers.Layer):
     def __init__(self, embed_dim, num_heads=8):
@@ -153,8 +154,8 @@ class MultiHeadSelfAttention(keras.layers.Layer):
         return output
 
 class TransformerBlock(keras.layers.Layer):
-    def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
-        super(TransformerBlock, self).__init__()
+    def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1, **kwargs):
+        super(TransformerBlock, self).__init__(**kwargs)
         self.att = MultiHeadSelfAttention(embed_dim, num_heads)
         self.ffn = Sequential([
             Dense(ff_dim, activation="relu"),
@@ -174,8 +175,8 @@ class TransformerBlock(keras.layers.Layer):
         return self.layernorm2(out1 + ffn_output)
 
 class PositionalEncoding(keras.layers.Layer):
-    def __init__(self, maxlen, embed_dim):
-        super(PositionalEncoding, self).__init__()
+    def __init__(self, maxlen, embed_dim, **kwargs):
+        super(PositionalEncoding, self).__init__(**kwargs)
         self.pos_encoding = self.positional_encoding(maxlen, embed_dim)
     
     def get_angles(self, pos, i, d_model):
@@ -195,8 +196,8 @@ class PositionalEncoding(keras.layers.Layer):
         return inputs + self.pos_encoding[:, :tf.shape(inputs)[1], :]
 
 class TokenAndPositionEmbedding(keras.layers.Layer):
-    def __init__(self, maxlen, vocab_size, embed_dim):
-        super(TokenAndPositionEmbedding, self).__init__()
+    def __init__(self, maxlen, vocab_size, embed_dim, **kwargs):
+        super(TokenAndPositionEmbedding, self).__init__(**kwargs)
         self.token_emb = Embedding(input_dim=vocab_size, output_dim=embed_dim)
         self.pos_emb = PositionalEncoding(maxlen, embed_dim)
     
@@ -214,7 +215,7 @@ def build_transformer_model(vocab_size, maxlen, embed_dim, num_heads, ff_dim, nu
         x = TransformerBlock(embed_dim, num_heads, ff_dim, 0.1)(x)
     x = Dropout(0.1)(x)
     #x = keras.layers.GlobalAveragePooling1D()(x)
-    x = x[:, -1, :]
+    x = Lambda(lambda t: t[:, -1, :])(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     model = Model(inputs=inputs, outputs=outputs)
     return model
@@ -350,6 +351,11 @@ def TuneModelNew():
     print("*** compiling model ***")
     modelAndTokenizer = GetModel()
     model = modelAndTokenizer[0]
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
+    )
     print("*** compiled model ***\n")
 
     epochs_ = input(f"epochs (default: {Epochs}): ")
@@ -407,5 +413,4 @@ def GetModelTuned():
     return [model, tokenizer]
 
 def GetResponse(model, tokenizer, query, length):
-    print(generate_seq(model, tokenizer, 64, query, length))
-    
+    print(generate_seq(model, tokenizer, 128, query, length))

@@ -27,3 +27,4 @@ data/
 dataEmotions/
 finetuned/
 finetuning_data/
+tokenized_finetuning_data/
