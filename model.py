@@ -165,7 +165,7 @@ class TransformerBlock(keras.layers.Layer):
         self.dropout1 = Dropout(rate)
         self.dropout2 = Dropout(rate)
     
-    def call(self, inputs, training):
+    def call(self, inputs, training=None):
         attn_output = self.att(inputs)
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(inputs + attn_output)
@@ -222,15 +222,15 @@ def build_transformer_model(vocab_size, maxlen, embed_dim, num_heads, ff_dim, nu
 
 class quickSave(keras.callbacks.Callback):
     def __init__(self, model, tokenizer, sequenceLength):
-        self.model = model
+        self.modelPassed = model
         self.tokenizer = tokenizer
         self.sequenceLength = sequenceLength
 
     def on_epoch_end(self, epoch, logs={}):
-        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
+        print(generate_seq(self.modelPassed, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
         print('saving model')
         amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
-        self.model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
+        self.modelPassed.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
         self.tokenizer.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.json")
         print('saved model')
 
@@ -252,12 +252,12 @@ class quickSave(keras.callbacks.Callback):
 
 class quickSaveTune(keras.callbacks.Callback):
     def __init__(self, model, tokenizer, sequenceLength):
-        self.model = model
+        self.modelPassed = model
         self.tokenizer = tokenizer
         self.sequenceLength = sequenceLength
 
     def on_epoch_end(self, epoch, logs={}):
-        print(generate_seq(self.model, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
+        print(generate_seq(self.modelPassed, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
 
         self.history_file = "training_history.json"
 
