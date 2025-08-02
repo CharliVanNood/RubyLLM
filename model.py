@@ -131,9 +131,12 @@ class MultiHeadSelfAttention(keras.layers.Layer):
     
     def call(self, inputs):
         batch_size = tf.shape(inputs)[0]
+        seq_len = tf.shape(inputs)[1]
+
         query = self.query_dense(inputs)
         key = self.key_dense(inputs)
         value = self.value_dense(inputs)
+
         query = self.separate_heads(query, batch_size)
         key = self.separate_heads(key, batch_size)
         value = self.separate_heads(value, batch_size)
@@ -143,6 +146,7 @@ class MultiHeadSelfAttention(keras.layers.Layer):
         mask = tf.reshape(mask, (1, 1, seq_len, seq_len))
 
         attention, weights = self.attention(query, key, value, mask)
+        
         attention = tf.transpose(attention, perm=[0, 2, 1, 3])
         concat_attention = tf.reshape(attention, (batch_size, -1, self.embed_dim))
         output = self.combine_heads(concat_attention)
