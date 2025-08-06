@@ -214,8 +214,8 @@ def build_transformer_model(vocab_size, maxlen, embed_dim, num_heads, ff_dim, nu
     for _ in range(num_layers):
         x = TransformerBlock(embed_dim, num_heads, ff_dim, 0.1)(x)
     x = Dropout(0.1)(x)
-    #x = keras.layers.GlobalAveragePooling1D()(x)
-    x = Lambda(lambda t: t[:, -1, :])(x)
+    x = keras.layers.GlobalAveragePooling1D()(x)
+    #x = Lambda(lambda t: t[:, -1, :])(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     model = Model(inputs=inputs, outputs=outputs)
     return model
@@ -303,8 +303,8 @@ def TrainModelNew():
     print("*** compiling model ***")
     embed_dim = 128
     num_heads = embed_dim // 64
-    ff_dim = embed_dim * 2
-    num_layers = 4
+    ff_dim = embed_dim
+    num_layers = 3
     model = build_transformer_model(vocab_size, sequenceLength, embed_dim, num_heads, ff_dim, num_layers)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     print("*** compiled model ***\n")
