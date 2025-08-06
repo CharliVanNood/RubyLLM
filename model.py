@@ -388,10 +388,10 @@ def GetModel():
     tokenizer = LoadTokenizer()
     
     print("*** loading model ***")
-    amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
+    amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2])
     with tf.keras.utils.custom_object_scope({'TransformerBlock': TransformerBlock, 'TokenAndPositionEmbedding': TokenAndPositionEmbedding}):
-        model = load_model(f"./trainingOutput/epoch{str(amountOfFiles - 1)}.h5")
-    print(f"*** loaded model ({str(amountOfFiles - 1)}) ***")
+        model = load_model(f"./trainingOutput/epoch{str(amountOfFiles)}.h5")
+    print(f"*** loaded model ({str(amountOfFiles)}) ***")
     print("")
 
     print("*** Model Info ***")
