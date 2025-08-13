@@ -165,6 +165,23 @@ class TransformerBlock(keras.layers.Layer):
         self.layernorm2 = LayerNormalization(epsilon=1e-6)
         self.dropout1 = Dropout(rate)
         self.dropout2 = Dropout(rate)
+
+    @property
+    def trainable(self):
+        return super().trainable
+
+    @trainable.setter
+    def trainable(self, value):
+        super(TransformerBlock, self.__class__).trainable.fset(self, value)
+        for layer in [
+            self.att,
+            self.ffn,
+            self.layernorm1,
+            self.layernorm2,
+            self.dropout1,
+            self.dropout2
+        ]:
+            layer.trainable = value
     
     def call(self, inputs, training=None):
         attn_output = self.att(inputs)
@@ -215,7 +232,6 @@ def build_transformer_model(vocab_size, maxlen, embed_dim, num_heads, ff_dim, nu
         x = TransformerBlock(embed_dim, num_heads, ff_dim, 0.1)(x)
     x = Dropout(0.1)(x)
     x = keras.layers.GlobalAveragePooling1D()(x)
-    #x = Lambda(lambda t: t[:, -1, :])(x)
     outputs = Dense(vocab_size, activation="softmax")(x)
     model = Model(inputs=inputs, outputs=outputs)
     return model
@@ -228,7 +244,7 @@ class quickSave(keras.callbacks.Callback):
         self.sequenceLength = sequenceLength
 
     def on_epoch_end(self, epoch, logs={}):
-        print(generate_seq(self.modelPassed, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
+        print(generate_seq(self.modelPassed, self.tokenizer, self.sequenceLength, "hello how are you doing today?[STA]", 64))
         print('saving model')
         amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
         self.modelPassed.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
@@ -258,7 +274,7 @@ class quickSaveTune(keras.callbacks.Callback):
         self.sequenceLength = sequenceLength
 
     def on_epoch_end(self, epoch, logs={}):
-        print(generate_seq(self.modelPassed, self.tokenizer, self.sequenceLength, "hello how are you doing today?[SEP]", 64))
+        print(generate_seq(self.modelPassed, self.tokenizer, self.sequenceLength, "hello how are you doing today?[STA]", 64))
 
         self.history_file = "training_history.json"
 
@@ -351,6 +367,8 @@ def TuneModelNew():
     print("*** compiling model ***")
     modelAndTokenizer = GetModel()
     model = modelAndTokenizer[0]
+    model.get_layer("transformer_block").trainable = False
+    model.get_layer("transformer_block_1").trainable = False
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
         loss="sparse_categorical_crossentropy",
