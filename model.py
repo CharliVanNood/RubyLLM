@@ -351,6 +351,57 @@ def TrainModelNew():
     print("*** Training done ***")
     print("")
 
+def ContinueModelNew():
+    tokenizer = LoadTokenizer()
+
+    print("*** Loading Tokenized Data ***")
+    with open('tokenized/data.json', 'r') as file:
+        data = json.load(file)
+    train_x = np.array(data[0])
+    train_y = np.array(data[1])
+    vocab_size = data[2]
+    print("Sequences loaded: " + str(len(train_y)))
+    print("Sequence  length: " + str(len(train_x[0])))
+    print("vocab     length: " + str(vocab_size))
+    print("*** Loaded Tokenized Data ***\n")
+    sequenceLength = len(train_x[0])
+    
+    print("*** loading model ***")
+    amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2])
+    with tf.keras.utils.custom_object_scope({'TransformerBlock': TransformerBlock, 'TokenAndPositionEmbedding': TokenAndPositionEmbedding}):
+        model = load_model(f"./trainingOutput/epoch{str(amountOfFiles)}.h5")
+    print(f"*** loaded model ({str(amountOfFiles)}) ***")
+    print("")
+
+    print("*** Model Info ***")
+    print(model.summary())
+
+    epochs_ = input(f"epochs (default: {Epochs}): ")
+    if epochs_ == "" or not epochs_.isnumeric():
+        epochs_ = Epochs
+    else:
+        epochs_ = int(epochs_)
+
+    print("*** Model Info ***")
+    print(model.summary())
+
+    if os.path.exists("training_history.json"):
+        os.remove("training_history.json")
+        print("training_history.json has been deleted.")
+    else:
+        print("training_history.json does not exist.")
+
+    input("start training: ")
+    print("*** Training ***")
+
+    model.fit(train_x, train_y, batch_size=512, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
+
+    amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
+    model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
+
+    print("*** Training done ***")
+    print("")
+
 def TuneModelNew():
     tokenizer = LoadTokenizer()
 
