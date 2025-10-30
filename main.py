@@ -1,5 +1,5 @@
 import subprocess
-from model import TrainModelNew
+from model import ContinueModelNew
 
-subprocess.run(["cargo", "run", "--", "train"])
+#subprocess.run(["cargo", "run", "--", "train"])
 ContinueModelNew()
