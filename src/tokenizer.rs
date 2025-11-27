@@ -8,7 +8,7 @@ use crate::data;
 pub fn tokenize(data_path: &str) -> Result<tokenizers::TokenizerImpl<BPE, Sequence, ByteLevel, ByteLevel, ByteLevel>> {
     println!("Creating the tokenizer");
     let mut trainer = BpeTrainerBuilder::new()
-        .vocab_size(48000)
+        .vocab_size(24000)
         .min_frequency(0)
         .show_progress(true)
         .special_tokens(

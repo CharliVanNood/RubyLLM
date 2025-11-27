@@ -7,7 +7,7 @@ mod data;
 mod tokenizer;
 mod setup;
 
-pub const SEQUENCE_LENGTH: usize = 128;
+pub const SEQUENCE_LENGTH: usize = 64;
 
 pub const TRAIN_FULL: bool = true;
 // set this to false if you only want short responses

@@ -7,6 +7,7 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 from tokenizers import Tokenizer
 
 tf.config.run_functions_eagerly(True)
+tf.config.optimizer.set_jit(True)
 
 import keras
 import numpy as np
@@ -99,9 +100,8 @@ def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
 
 def lr_schedule(epoch, lr):
     if epoch < 5:
-        return float(lr)
-    else:
-        return float(lr * tf.math.exp(-0.1))
+        return float(lr * (epoch + 1) / 5)
+    return float(lr)
 
 class MultiHeadSelfAttention(keras.layers.Layer):
     def __init__(self, embed_dim, num_heads=8):
@@ -156,7 +156,13 @@ class MultiHeadSelfAttention(keras.layers.Layer):
 class TransformerBlock(keras.layers.Layer):
     def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1, **kwargs):
         super(TransformerBlock, self).__init__(**kwargs)
-        self.att = MultiHeadSelfAttention(embed_dim, num_heads)
+        self.att = keras.layers.MultiHeadAttention(
+            num_heads=num_heads,
+            key_dim=embed_dim // num_heads,
+            use_bias=True,
+            dropout=0.1,
+            output_shape=embed_dim,
+        )
         self.ffn = Sequential([
             Dense(ff_dim, activation="relu"),
             Dense(embed_dim),
@@ -182,9 +188,14 @@ class TransformerBlock(keras.layers.Layer):
             self.dropout2
         ]:
             layer.trainable = value
-    
+
     def call(self, inputs, training=None):
-        attn_output = self.att(inputs)
+        seq_len = tf.shape(inputs)[1]
+        mask = tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
+        mask = 1 - mask
+        mask = tf.cast(mask, dtype=tf.bool)
+        
+        attn_output = self.att(query=inputs, value=inputs, key=inputs, attention_mask=mask)
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(inputs + attn_output)
         ffn_output = self.ffn(out1)
@@ -232,7 +243,7 @@ def build_transformer_model(vocab_size, maxlen, embed_dim, num_heads, ff_dim, nu
         x = TransformerBlock(embed_dim, num_heads, ff_dim, 0.1)(x)
     x = Dropout(0.1)(x)
     x = keras.layers.GlobalAveragePooling1D()(x)
-    outputs = Dense(vocab_size, activation="softmax")(x)
+    outputs = Dense(vocab_size)(x)
     model = Model(inputs=inputs, outputs=outputs)
     return model
 
@@ -317,12 +328,12 @@ def TrainModelNew():
     sequenceLength = len(train_x[0])
 
     print("*** compiling model ***")
-    embed_dim = 128
+    embed_dim = 256
     num_heads = embed_dim // 64
     ff_dim = embed_dim
-    num_layers = 3
+    num_layers = 6
     model = build_transformer_model(vocab_size, sequenceLength, embed_dim, num_heads, ff_dim, num_layers)
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     print("*** compiled model ***\n")
 
     epochs_ = input(f"epochs (default: {Epochs}): ")
@@ -340,10 +351,30 @@ def TrainModelNew():
     else:
         print("training_history.json does not exist.")
 
+    val_size = int(len(train_x) * 0.05)
+
+    x_val = train_x[:val_size]
+    y_val = train_y[:val_size]
+
+    x_train = train_x[val_size:]
+    y_train = train_y[val_size:]
+
     input("start training: ")
     print("*** Training ***")
 
-    model.fit(train_x, train_y, batch_size=512, epochs=epochs_, validation_split=0.05, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
+    batch_size = 128
+    train_ds = (
+        tf.data.Dataset.from_tensor_slices((x_train, y_train))
+        .shuffle(50000)
+        .batch(batch_size)
+        .prefetch(tf.data.AUTOTUNE)
+    )
+    val_ds = (
+        tf.data.Dataset.from_tensor_slices((x_val, y_val))
+        .batch(batch_size)
+        .prefetch(tf.data.AUTOTUNE)
+    )
+    model.fit(train_ds, epochs=epochs_, callbacks=[quickSave(model, tokenizer, sequenceLength), LearningRateScheduler(lr_schedule)])
 
     amountOfFiles = len(next(walk("./trainingOutput"), (None, None, []))[2]) - 3
     model.save(f"./trainingOutput/epoch{str(amountOfFiles + 1)}.h5")
