@@ -59,7 +59,7 @@ def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
 
             if len(percentages_) == 0:
                 print("NO VALID WORDS FOUND")
-                percentages_.append(random.randint(0, VocabSize))
+                percentages_.append(random.randint(0, 24000))
 
             yhat = percentages_[random.randint(0, len(percentages_) - 1)]
 
@@ -100,8 +100,9 @@ def generate_seq(model, tokenizer, sequenceLength, query, numberOfWords):
 
 def lr_schedule(epoch, lr):
     if epoch < 5:
-        return float(lr * (epoch + 1) / 5)
-    return float(lr)
+        return float(lr)
+    else:
+        return float(lr * tf.math.exp(-0.1))
 
 class MultiHeadSelfAttention(keras.layers.Layer):
     def __init__(self, embed_dim, num_heads=8):
@@ -331,9 +332,9 @@ def TrainModelNew():
     embed_dim = 256
     num_heads = embed_dim // 64
     ff_dim = embed_dim
-    num_layers = 6
+    num_layers = 4
     model = build_transformer_model(vocab_size, sequenceLength, embed_dim, num_heads, ff_dim, num_layers)
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-2), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     print("*** compiled model ***\n")
 
     epochs_ = input(f"epochs (default: {Epochs}): ")
